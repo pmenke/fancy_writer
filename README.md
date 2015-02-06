@@ -27,9 +27,9 @@ Or install it yourself as:
 
     $ gem install fancy_writer
 
-## Usage
+## Basic usage
 
-### Basic usage and writing lines
+### Writing lines
 
 Given an IO object that is suitable for writing (such as a file or stdout),
 FancyWriter can use this IO object for creating formatted output:
@@ -167,6 +167,50 @@ end
           Additionally, eight spaces.
 ````
 
+### Blocks
+
+With "blocks" I refer to segments of text that have one single line that begins it and one line that ends it, and an additional body in between. Often, this
+body is indented. The following three-line samples show different examples of
+such blocks from different languages. Each first line is the beginning of a
+block, each second line its body, each third line its ending:
+
+```` HTML
+<div>
+  <p>Lorem ipsum dolor sit amet...</p>
+</div>
+````
+```` Latex
+\begin{section}
+  Lorem ipsum dolor sit amet...
+\end{section}
+````
+```` Bibtex
+@article{User1999,
+  author = {Joe User}
+}
+````
+
+FancyWriter provides the `block` method (shortcut: `b`) to ease the process
+of creating such blocks. This method expects two or three parameters and a
+block. The first two parameters indicate the beginning and ending line, 
+respectively. The third parameter is optional, it indicates the number of
+spaces to be used for indentation (its default is 2 spaces).
+
+So, the first example above (the HTML one) can be produced with FancyWriter
+as follows:
+
+```` Ruby
+FancyWriter::FancyIO.new(io) do
+  block '<div>', '</div>' do
+    line '<p>Lorem ipsum dolor sit amet...</p>'
+  end
+end
+````
+
+While this feature in general does not appear to be very helpful, it can
+be used in combination with custom patterns (see below) to produce blocks
+dynamically. 
+
 ### Symbol-separated values
 
 If you pass an Enumerable to `write_enum` (short version: `e`), the underlying
@@ -201,7 +245,7 @@ Note that also for this method, surrounding `comment` or indentation methods
 are evaluated, meaning that also formatted number sequences will be indented
 or commented out.
 
-## An exhaustive example
+## An exhaustive example of basic usage
 
 This is a somewhat artifical example, but it contains most of the methods
 in action.
@@ -242,6 +286,79 @@ config:
         5,6,7,8
 ````
 
+## Advanced usage 
+
+### Custom line patterns
+
+If you are working with file formats that use repeated patterns (usually
+resulting from the language used), you can make your work even easier
+by defining *named patterns*. These are basically strings with some
+placeholders in them, which you can use to generate lines where these
+placeholders are substituted with parameters.
+
+With the possibility to generate named patterns, you can create your
+own small DSL for the file format you are working with. This can
+save time and make your code more legible.
+
+Let me give an example with the following segment of an Apache configuration
+file (let us further assume that you somehow need to generate these
+config files in your Ruby scripts from some source):
+
+```` conf
+User wwwrun
+Listen 80
+DocumentRoot "/srv/www/htdocs"
+LoadModule cgi_module modules/mod_cgi.so
+LoadModule mime_module modules/mod_mime.so
+LoadModule negotiation_module modules/mod_negotiation.so
+LoadModule status_module modules/mod_status.so
+````
+
+Two things are important here: this configuration file follows a predefined syntax, and there are elements that repeat themselves. For these, you could define named patterns which serve several purposes: You do not need to spell out the complete line, you avoid repetition of formatting, and you can reduce errors. If you look at the end of the sample, you see many similar lines. If you define one pattern for them, you follow the DRY principle, you reduce the number of places to look for if a bug occurs, and you get a cleaner way of generating the file contents.
+
+If you want to use named patterns, you need to delay the calling of the formatting method, because you need to insert the configuration fist. Thus, you do not call the formatting method directly on the newly created object  as in the examples above, or like this:
+
+```` Ruby
+FancyWriter::FancyIO.new(io) do
+  # calls to line, block, comment, etc.
+end
+````
+
+Instead, you assign the FancyWriter instance to a variable, perform the configuration, and finally call `convert` on the instance and give it a block with your formatting wishes:
+
+```` Ruby
+@writer = FancyWriter::FancyIO.new(io)
+# Do your named pattern configuration here
+@writer.add_line_config :load_module, "LoadModule %s modules/%s.do")
+@writer.convert do
+  # NOW, we can start writing!
+  # insert your calls to line, block, comment, etc.
+end
+````
+
+In this example, you can see how a named pattern can be inserted using the
+`add_line_config` method. It expects a symbol (containing the name of the pattern) and the pattern itself.
+
+1. The symbol should follow the rules for method names in Ruby. You will see why in a few moments. 
+2. The named pattern follows the conventions for the `sprintf` string formatting. In a nutshell, this means that patterns such as `%s` inside this string will be replaced with the next available given parameter. Literal `%` characters can thus be expressed by doubling them in the pattern: `%%`.
+
+The pattern defined above basically inserts a line starting with 'LoadModule', and then a formatting of two parameters that you can give it during calling. You will be able to call this named pattern as if you call the pattern name as a method (that's why the pattern name should follow these rules).
+
+You can generate the four module configurations from the example with this code:
+
+```` Ruby
+@writer = FancyWriter::FancyIO.new(io)
+# Do your named pattern configuration here
+@writer.add_line_config :load_module, "LoadModule %s modules/%s.so")
+@writer.convert do
+  load_module 'cgi_module', 'mod_cgi'
+  load_module 'mime_module', 'mod_mime'
+  load_module 'negotiation_module', 'mod_negotiation'
+  load_module 'status_module', 'mod_status'
+end
+````
+
+In a similar fashion, you could add patterns for the other lines in the configuration file. Note that you need to know which pattern expects which parameters in which order. 
 
 ## Issues
 

@@ -30,6 +30,31 @@ describe FancyWriter::FancyIO do
 
   context 'FancyWriter' do
 
+    context 'Static methods' do
+      
+      it 'performs basic interpolation correctly' do
+        @pattern = 'The %speed %color fox'
+        @args = { speed: 'quick', color: 'brown'}
+        @result = FancyIO.interpol(@pattern, @args)
+        @result.should eq "The quick brown fox"
+      end
+      
+      it 'respects escaped percent signs' do
+        @pattern = 'The %%speed %color fox'
+        @args = { speed: 'quick', color: 'brown'}
+        @result = FancyIO.interpol(@pattern, @args)
+        @result.should eq "The %speed brown fox"
+      end
+      
+      it 'respects escaped percent signs even in the very beginning' do
+        @pattern = '%%speed %color fox'
+        @args = { speed: 'quick', color: 'brown'}
+        @result = FancyIO.interpol(@pattern, @args)
+        @result.should eq "%speed brown fox"
+      end
+      
+    end
+
     context 'Initialization' do
       
       it 'can take additional config and then be run with convert method' do 
@@ -176,7 +201,6 @@ describe FancyWriter::FancyIO do
           end
         end
       end
-      puts @string
     end
   end
 end
