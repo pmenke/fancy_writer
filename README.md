@@ -275,6 +275,19 @@ ideally by creating an issue on Github.
 
 Please browse existing issues first, to avoid double postings.
 
+## Release history
+
+### 1.0.1 – block support (6 Feb 2015)
+
+- __[#1](https://github.com/pmenke/fancy_writer/issues/1) implemented.__
+Adds support for blocks
+- __[#3](https://github.com/pmenke/fancy_writer/issues/3) implemented.__
+Minor code improvements
+
+### 1.0.0 – initial version (28 Mar 2014)
+
+- First version of the gem, basic support for lines, comments, indentation.
+
 ## Contributing
 
 Any ideas are welcome!  Either
