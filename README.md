@@ -329,7 +329,7 @@ Instead, you assign the FancyWriter instance to a variable, perform the configur
 ```` Ruby
 @writer = FancyWriter::FancyIO.new(io)
 # Do your named pattern configuration here
-@writer.add_line_config :load_module, "LoadModule %s modules/%s.do")
+@writer.add_line_config :load_module, "LoadModule %module modules/%file.so")
 @writer.convert do
   # NOW, we can start writing!
   # insert your calls to line, block, comment, etc.
@@ -337,10 +337,9 @@ end
 ````
 
 In this example, you can see how a named pattern can be inserted using the
-`add_line_config` method. It expects a symbol (containing the name of the pattern) and the pattern itself.
+`add_line_config` method. It expects a symbol (containing the name of the pattern) and the pattern itself. The symbol should follow the rules for method names in Ruby. You will see why in a few moments. 
 
-1. The symbol should follow the rules for method names in Ruby. You will see why in a few moments. 
-2. The named pattern follows the conventions for the `sprintf` string formatting. In a nutshell, this means that patterns such as `%s` inside this string will be replaced with the next available given parameter. Literal `%` characters can thus be expressed by doubling them in the pattern: `%%`.
+The named pattern follows a convention similar to the one used for the `sprintf` string formatting. The difference is that *names* are used, such as `%method`. These names will, during text generation, be replaced with matching values from the hash passed to your custom line method. Thus, if you pass a hash containing the entry `method: "mime"`, then all occurrences of `%method` in that pattern will be replaced with `mime`. Literal `%` characters can be expressed by doubling them in the pattern: `%%`.
 
 The pattern defined above basically inserts a line starting with 'LoadModule', and then a formatting of two parameters that you can give it during calling. You will be able to call this named pattern as if you call the pattern name as a method (that's why the pattern name should follow these rules).
 
@@ -349,16 +348,52 @@ You can generate the four module configurations from the example with this code:
 ```` Ruby
 @writer = FancyWriter::FancyIO.new(io)
 # Do your named pattern configuration here
-@writer.add_line_config :load_module, "LoadModule %s modules/%s.so")
+@writer.add_line_config :load_module, "LoadModule %module modules/%file.so"
 @writer.convert do
-  load_module 'cgi_module', 'mod_cgi'
-  load_module 'mime_module', 'mod_mime'
-  load_module 'negotiation_module', 'mod_negotiation'
-  load_module 'status_module', 'mod_status'
+  load_module module: 'cgi_module', file: 'mod_cgi'
+  load_module module: 'mime_module', file: 'mod_mime'
+  load_module module: 'negotiation_module', file: 'mod_negotiation'
+  load_module module: 'status_module', file: 'mod_status'
 end
 ````
 
-In a similar fashion, you could add patterns for the other lines in the configuration file. Note that you need to know which pattern expects which parameters in which order. 
+In a similar fashion, you could add patterns for the other lines in the configuration file. 
+
+### Custom block patterns
+
+Similar to this, you can also add patterns that create custom blocks. In these blocks, the beginning *and* ending text will be interpolated with the values you pass to the block. The functionality is similar to the one used for custom line patterns, with the following exceptions:
+
+You configure a new block as follows:
+```` Ruby
+@writer.add_block_config block_name, begin_pattern, end_pattern, indentation
+````
+
+- `block_name` is the symbol to be used for the method call.
+- `begin_pattern` and `end_pattern` are patterns for the strings that you want to use to surround your block. Here, you can add `%field` definitions in places where you want to put a variable value.
+- `indentation` declares the number of spaces to use for block indentation.
+
+The difference in calling a block pattern is that you pass a (Ruby) block to it that contains rules for creating the body of the block:
+
+```` Ruby
+@writer.add_block_config :xml_tag, '<%tagname>', '</%tagname>', 2
+@writer.convert do1
+  xml_tag tagname: 'div' do
+    xml_tag tagname: 'p' do 
+      line 'Hello world!'
+    end
+  end
+end
+````
+thus produces
+````XML
+<div>
+  <p>
+    Hello World!
+  </p>
+</div>
+````
+
+*(Of course there are dozens of better and more efficient ways to actually output XML, this is supposed to be just a comprehensible example.)*
 
 ## Issues
 
