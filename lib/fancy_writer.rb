@@ -176,6 +176,9 @@ module FancyWriter
     # Adds an alias +e+ for the +write_enum+ method.
     alias :e :write_enum
 
+    # Adds an alias +b+ for the +block+ method.
+    alias :b :block
+
 
     private
 
