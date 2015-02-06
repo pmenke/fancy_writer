@@ -429,6 +429,14 @@ Please browse existing issues first, to avoid double postings.
 
 ## Release history
 
+### 1.0.2 – named pattern support (6 Feb 2015)
+
+- __[#4](https://github.com/pmenke/fancy_writer/issues/4) implemented.__
+Adds support for custom line patterns
+- __[#2](https://github.com/pmenke/fancy_writer/issues/2) implemented.__
+Adds support for custom block patterns
+
+
 ### 1.0.1 – block support (6 Feb 2015)
 
 - __[#1](https://github.com/pmenke/fancy_writer/issues/1) implemented.__
