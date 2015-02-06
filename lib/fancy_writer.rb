@@ -25,6 +25,13 @@ module FancyWriter
   # See README.md for an exhaustive usage description.
   class FancyIO
 
+    def self.interpol(string, args)
+      result = string.gsub(/(?<!%)%(\w+)/) do
+        args.has_key?($1.to_sym) ? args[$1.to_sym] : ''
+      end
+      result.gsub(/%%/, '%')
+    end
+
     # This hash holds some default options that are used when
     # no other options are passed to the constructor.
     DEFAULT_OPTIONS = {
@@ -47,6 +54,11 @@ module FancyWriter
     # An attribute holding the caller object.
     attr_reader :caller
 
+    # An attribute holding custom line configurations.
+    attr_reader :custom_lines
+    
+    attr_reader :custom_blocks
+    
 
     # Initializes a new fancy writer instance that wraps
     # around the given io object +p_stream+.
@@ -67,6 +79,8 @@ module FancyWriter
     def initialize(p_stream, opts={}, &block)
       @stream = p_stream
       @prefix_stack = []
+      @custom_lines = Hash.new
+      @custom_blocks = Hash.new
       effective_opts = DEFAULT_OPTIONS.merge(opts)
       @enum_separator = effective_opts[:enum_separator]
       @enum_quote = effective_opts[:enum_quote]
@@ -85,6 +99,19 @@ module FancyWriter
       if block_given?
         instance_eval &block
       end
+    end
+    
+    # # # # # # # # # # # # # # # # # #
+    # Further setup of the object
+    # # # # # # # # # # # # # # # # # #
+
+    # Adds a new custom line configuration to the object.
+    def add_line_config(name, pattern)
+      @custom_lines[name.to_sym] = pattern
+    end
+    
+    def add_block_config(name, begin_pattern, end_pattern, indentation=2)
+      @custom_blocks[name.to_sym] = [ begin_pattern, end_pattern, indentation ]
     end
     
     # Adds a new string to the prepend stack. These strings
@@ -187,10 +214,18 @@ module FancyWriter
     # user with method calls inside FancyWriter's blocks.
     def method_missing(meth, *args, &block)
       if caller.respond_to?(meth)
-        caller.send(meth, *args, &block)
-      else
-        super
+        return caller.send(meth, *args, &block)
       end
+      if @custom_lines.has_key?(meth)
+        evaluated_pattern = FancyIO.interpol(@custom_lines[meth],args.first)
+        return line(evaluated_pattern)
+      end
+      if @custom_blocks.has_key?(meth)
+        evaluated_begin = FancyIO.interpol(@custom_blocks[meth][0], args.first)
+        evaluated_end   = FancyIO.interpol(@custom_blocks[meth][1], args.first)
+        return block(evaluated_begin, evaluated_end, @custom_blocks[meth][2], &block)
+      end
+      return super
     end
 
     # Internal method that performs the actual writing.
