@@ -42,7 +42,6 @@ describe FancyWriter::FancyIO do
     
     it 'uses a stored line to produce correct output' do
       @writer.add_line_config(:custom, "Hi %who")
-      @writer.custom_lines.has_key?(:custom).should be true
       @writer.convert do
         custom who: 'ho'
       end
@@ -66,6 +65,34 @@ describe FancyWriter::FancyIO do
       @string.should eq "\\node at (4,2) (node1) {Source};\n"
       puts @string
     end
+    
+  end
+  
+  context 'Custom blocks' do
+    
+    it 'can store custom block configurations' do
+      @writer.add_block_config(:custom2, "begin", "end", 4)
+      @writer.custom_blocks.should_not be nil
+    end  
+
+    it 'stores correct info for custom block configurations' do
+      @writer.add_block_config(:custom2, "begin", "end", 4)
+      @writer.custom_blocks.has_key?(:custom2).should be true
+      @writer.custom_blocks[:custom2][0].should eq "begin"
+      @writer.custom_blocks[:custom2][1].should eq "end"
+      @writer.custom_blocks[:custom2][2].should eq 4
+    end  
+    
+    it 'uses a stored block to produce correct output' do
+      @writer.add_block_config(:custom2, "begin %name", "end %name", 4)
+      @writer.convert do
+        custom2 name: 'Heidi' do
+          line 'Peter'
+        end
+      end
+      @string.should eq "begin Heidi\n    Peter\nend Heidi\n"
+    end
+    
     
   end
   

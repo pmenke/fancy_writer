@@ -57,6 +57,8 @@ module FancyWriter
     # An attribute holding custom line configurations.
     attr_reader :custom_lines
     
+    attr_reader :custom_blocks
+    
 
     # Initializes a new fancy writer instance that wraps
     # around the given io object +p_stream+.
@@ -78,6 +80,7 @@ module FancyWriter
       @stream = p_stream
       @prefix_stack = []
       @custom_lines = Hash.new
+      @custom_blocks = Hash.new
       effective_opts = DEFAULT_OPTIONS.merge(opts)
       @enum_separator = effective_opts[:enum_separator]
       @enum_quote = effective_opts[:enum_quote]
@@ -105,6 +108,10 @@ module FancyWriter
     # Adds a new custom line configuration to the object.
     def add_line_config(name, pattern)
       @custom_lines[name.to_sym] = pattern
+    end
+    
+    def add_block_config(name, begin_pattern, end_pattern, indentation=2)
+      @custom_blocks[name.to_sym] = [ begin_pattern, end_pattern, indentation ]
     end
     
     # Adds a new string to the prepend stack. These strings
@@ -212,6 +219,11 @@ module FancyWriter
       if @custom_lines.has_key?(meth)
         evaluated_pattern = FancyIO.interpol(@custom_lines[meth],args.first)
         return line(evaluated_pattern)
+      end
+      if @custom_blocks.has_key?(meth)
+        evaluated_begin = FancyIO.interpol(@custom_blocks[meth][0], args.first)
+        evaluated_end   = FancyIO.interpol(@custom_blocks[meth][1], args.first)
+        return block(evaluated_begin, evaluated_end, @custom_blocks[meth][2], &block)
       end
       return super
     end
