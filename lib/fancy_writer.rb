@@ -76,6 +76,17 @@ module FancyWriter
       end
     end
 
+    # Takes the given block and uses it to convert data. This
+    # method is useful if you want to do things to your
+    # FancyWriter object after initialization.
+    # @param @block   [Block] A block containing the
+    #                         fancy writer code.
+    def convert(&block)
+      if block_given?
+        instance_eval &block
+      end
+    end
+    
     # Adds a new string to the prepend stack. These strings
     # will be added to each output line until the end of the
     # block is reached.
@@ -139,6 +150,13 @@ module FancyWriter
     def write_enum(p_enum)
       write_line(p_enum)
     end
+
+    def block(prefix, postfix, indentation=2, &block)
+      line prefix
+      indent indentation, &block
+      line postfix                
+    end
+      
 
     # Adds an alias +w+ for the +write+ method.
     alias :w    :write
