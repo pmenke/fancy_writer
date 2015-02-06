@@ -182,7 +182,9 @@ module FancyWriter
       else
         formatted_line = line.to_s
       end
-      stream << "%s%s%s" %[@prefix_stack.join(''),formatted_line,"\n"]
+      stream << @prefix_stack.join('')
+      stream << formatted_line
+      stream << "\n"
     end
 
     # Joins together an enumerable, using configuration options
