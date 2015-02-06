@@ -30,6 +30,19 @@ describe FancyWriter::FancyIO do
 
   context 'FancyWriter' do
 
+    context 'Initialization' do
+      
+      it 'can take additional config and then be run with convert method' do 
+         @writer = FancyIO.new(@string) 
+         in_between = @writer.class.name
+         @writer.convert do
+           w "convert"
+         end
+         @string.should eq "convert\n" 
+      end
+      
+    end
+
     context 'Basics' do
       it 'writes lines without method as they are' do
         @writer = FancyIO.new(@string) do
@@ -115,6 +128,31 @@ describe FancyWriter::FancyIO do
 
     end
 
+    context 'Blocks' do
+      
+      it 'produces correct blocks' do
+        @writer = FancyIO.new(@string) do
+          line 'before'
+          block 'begin', 'end' do
+            line 'inside'
+          end
+          line 'after'
+        end
+        @string.should eq "before\nbegin\n  inside\nend\nafter\n"
+      end
+      
+      it 'produces correct blocks with custom indentation settings' do
+        @writer = FancyIO.new(@string) do
+          line 'before'
+          block 'begin', 'end', 4 do
+            line 'inside'
+          end
+          line 'after'
+        end
+        @string.should eq "before\nbegin\n    inside\nend\nafter\n"
+      end
+      
+    end
 
     it 'exports a complex example correctly' do
       @writer = FancyIO.new(@string) do
